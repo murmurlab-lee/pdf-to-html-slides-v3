@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Preview - 确认页面模板</title>
+  <style>
+    :root {
+      --bg: #f5f0eb;
+      --text: #3a3a3a;
+      --text-secondary: #8a8a8a;
+      --accent: #b85450;
+      --border: #e0d5cc;
+      --card-bg: #fff;
+      --selected: #b8545020;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Noto Sans SC', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    .header {
+      position: sticky; top: 0; z-index: 100;
+      background: var(--card-bg);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .header h1 { font-size: 16px; font-weight: 500; }
+    .header .meta { font-size: 13px; color: var(--text-secondary); }
+    .header .actions { display: flex; gap: 8px; align-items: center; }
+    .btn {
+      padding: 8px 16px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--card-bg);
+      color: var(--text);
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn:hover { border-color: var(--accent); }
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+    .btn-primary:hover { opacity: 0.9; }
+    .btn-small { padding: 4px 10px; font-size: 12px; }
+
+    .layout {
+      display: flex;
+      height: calc(100vh - 60px);
+    }
+    .sidebar {
+      width: 280px;
+      background: var(--card-bg);
+      border-right: 1px solid var(--border);
+      overflow-y: auto;
+      padding: 12px;
+    }
+    .thumb-list { display: flex; flex-direction: column; gap: 8px; }
+    .thumb-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.15s;
+      border: 2px solid transparent;
+    }
+    .thumb-item:hover { background: var(--selected); }
+    .thumb-item.active {
+      border-color: var(--accent);
+      background: var(--selected);
+    }
+    .thumb-item.changed { border-color: #d4a017; }
+    .thumb-item input[type="checkbox"] {
+      width: 16px; height: 16px; accent-color: var(--accent);
+    }
+    .thumb-item img {
+      width: 60px; height: 40px; object-fit: cover;
+      border-radius: 4px; flex-shrink: 0;
+    }
+    .thumb-item .info { flex: 1; min-width: 0; }
+    .thumb-item .page-num {
+      font-size: 11px; color: var(--text-secondary);
+    }
+    .thumb-item .tmpl {
+      font-size: 11px; padding: 1px 6px; border-radius: 3px;
+      background: var(--border); display: inline-block; margin-top: 2px;
+    }
+    .thumb-item.changed .tmpl { background: #d4a01730; color: #8b6914; }
+
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .preview-frame {
+      flex: 1;
+      background: #2c2c2c;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .preview-frame iframe {
+      width: 100%;
+      max-width: 1200px;
+      height: 100%;
+      border: none;
+      border-radius: 4px;
+      background: var(--bg);
+    }
+    .controls {
+      background: var(--card-bg);
+      border-top: 1px solid var(--border);
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .controls label { font-size: 13px; color: var(--text-secondary); }
+    .controls select {
+      padding: 6px 12px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      font-size: 13px;
+      background: var(--card-bg);
+      cursor: pointer;
+    }
+    .controls select:focus { border-color: var(--accent); outline: none; }
+    .status { font-size: 12px; color: var(--text-secondary); }
+    .status.changed { color: #d4a017; }
+
+    .batch-bar {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 24px;
+      background: var(--selected);
+      border-bottom: 1px solid var(--border);
+    }
+    .batch-bar.visible { display: flex; }
+
+    @media (max-width: 768px) {
+      .layout { flex-direction: column; height: auto; }
+      .sidebar { width: 100%; height: 200px; }
+      .thumb-list { flex-direction: row; overflow-x: auto; }
+      .preview-frame { height: 50vh; }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <h1 id="project-name">Presentation</h1>
+      <div class="meta" id="header-meta">共 0 页</div>
+    </div>
+    <div class="actions">
+      <button class="btn btn-small" onclick="applyAllAI()">全部使用AI推荐</button>
+      <button class="btn btn-small" onclick="toggleBatch()">批量选择</button>
+      <button class="btn btn-primary" onclick="confirmGenerate()">确认并生成HTML</button>
+    </div>
+  </div>
+
+  <div class="batch-bar" id="batch-bar">
+    <span id="batch-count">已选 0 页</span>
+    <select id="batch-template">
+      <option value="">选择模板...</option>
+      <option value="cover">cover - 封面</option>
+      <option value="text-center">text-center - 居中文字</option>
+      <option value="split">split - 图文分栏</option>
+      <option value="image-full">image-full - 全屏图片</option>
+      <option value="image-grid">image-grid - 图片网格</option>
+      <option value="image-draw">image-draw - 分析图</option>
+      <option value="dark-text-image">dark-text-image - 深色图文</option>
+      <option value="about">about - 介绍</option>
+    </select>
+    <button class="btn btn-small" onclick="applyBatch()">应用</button>
+    <button class="btn btn-small" onclick="cancelBatch()">取消</button>
+  </div>
+
+  <div class="layout">
+    <div class="sidebar">
+      <div class="thumb-list" id="thumb-list"></div>
+    </div>
+    <div class="main">
+      <div class="preview-frame">
+        <iframe id="preview-iframe" src="about:blank"></iframe>
+      </div>
+      <div class="controls">
+        <label>第 <span id="curr-page-num">1</span> 页 / 共 <span id="total-pages">0</span> 页</label>
+        <label>模板:</label>
+        <select id="template-select" onchange="changeTemplate(this.value)">
+          <option value="cover">cover - 封面</option>
+          <option value="text-center">text-center - 居中文字</option>
+          <option value="split">split - 图文分栏</option>
+          <option value="image-full">image-full - 全屏图片</option>
+          <option value="image-grid">image-grid - 图片网格</option>
+          <option value="image-draw">image-draw - 分析图</option>
+          <option value="dark-text-image">dark-text-image - 深色图文</option>
+          <option value="about">about - 介绍</option>
+        </select>
+        <div class="status" id="status">AI推荐</div>
+      </div>
+    </div>
+  </div>
+
+  <script type="application/json" id="pages-config">__PAGES_JSON__</script>
+  <script type="application/json" id="slides-data">__SLIDES_JSON__</script>
+  <script>
+    // Load pages config from server-provided data
+    const configEl = document.getElementById('pages-config');
+    let pages = [];
+    try {
+      const jsonText = configEl.textContent.trim();
+      if (jsonText) pages = JSON.parse(jsonText);
+    } catch(e) {
+      console.error('Failed to parse pages config:', e);
+    }
+    
+    // Load pre-built slide data (same as final site)
+    const slidesEl = document.getElementById('slides-data');
+    let slidesData = [];
+    try {
+      const slidesText = slidesEl.textContent.trim();
+      if (slidesText) slidesData = JSON.parse(slidesText);
+    } catch(e) {
+      console.error('Failed to parse slides data:', e);
+    }
+    let selectedIdx = 0;
+    let batchMode = false;
+    let selectedPages = new Set();
+
+    // Render thumbnail list
+    function renderThumbs() {
+      const el = document.getElementById('thumb-list');
+      el.innerHTML = pages.map((p, i) => {
+        const changed = p.user_template !== p.ai_template;
+        return `
+          <div class="thumb-item ${i === selectedIdx ? 'active' : ''} ${changed ? 'changed' : ''}" 
+               data-idx="${i}" onclick="selectPage(${i})">
+            ${batchMode ? `<input type="checkbox" ${selectedPages.has(i) ? 'checked' : ''} 
+                           onclick="event.stopPropagation();toggleSelect(${i})">` : ''}
+            <img src="${p.thumbnail}" alt="P${p.page}">
+            <div class="info">
+              <div class="page-num">P${p.page}</div>
+              <span class="tmpl">${p.user_template}${changed ? ' (改)' : ''}</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      document.getElementById('total-pages').textContent = pages.length;
+      document.getElementById('header-meta').textContent = 
+        `共 ${pages.length} 页`;
+    }
+
+    // Select a page
+    function selectPage(idx) {
+      selectedIdx = idx;
+      const p = pages[idx];
+      document.getElementById('curr-page-num').textContent = idx + 1;
+      document.getElementById('template-select').value = p.user_template;
+      document.getElementById('status').textContent = 
+        p.user_template === p.ai_template ? 'AI推荐' : '已修改';
+      document.getElementById('status').className = 
+        'status' + (p.user_template !== p.ai_template ? ' changed' : '');
+      
+      // Update active state
+      document.querySelectorAll('.thumb-item').forEach((el, i) => {
+        el.classList.toggle('active', i === idx);
+      });
+
+      // Update preview iframe - pass the slide data
+      updatePreview(idx);
+    }
+
+    // Update preview iframe
+    // Uses pre-built slidesData (same as final site) for consistency
+    // Data passed via URL hash (synchronous, ensures index.js sees data on load)
+    function updatePreview(idx) {
+      const iframe = document.getElementById('preview-iframe');
+      // Prefer pre-built slides data, fallback to on-the-fly calculation
+      const slideData = slidesData[idx] || buildSlideData(pages[idx]);
+      
+      // Encode slide data into URL hash (synchronous, no timing issues)
+      const encoded = encodeURIComponent(JSON.stringify([slideData]));
+      // Add _t param to force iframe reload when switching between pages
+      iframe.src = './preview-slide.html?_t=' + Date.now() + '#' + encoded;
+    }
+
+    // Build slide data from page config (must match build_site.py exactly)
+    function buildSlideData(page) {
+      const t = page.user_template;
+      const base = { type: t, visible: true };
+      const text = page.text || '';
+      const images = page.images || [];
+      const summary = page.summary || '';
+      
+      // Helper: split text into paragraphs
+      const paragraphs = text.split('\n').filter(p => p.trim());
+      
+      switch(t) {
+        case 'cover':
+          // Use cover_image if available (best hero render), else fallback to first image
+          const coverImg = page.cover_image || (images[0] ? images[0] : '');
+          return {
+            ...base,
+            bgImage: coverImg ? '/' + coverImg : '',
+            title: summary.slice(0, 40) || `Page ${page.page}`,
+            titleEn: ''
+          };
+        case 'text-center':
+          // Preserve original text exactly as read from PDF
+          return {
+            ...base,
+            title: '',
+            body: paragraphs.length > 0 ? paragraphs : [text]
+          };
+        case 'split':
+          return {
+            ...base,
+            title: paragraphs[0] ? paragraphs[0].slice(0, 30) : summary.slice(0, 20),
+            body: paragraphs.length > 1 ? paragraphs.slice(1, 3) : [text.slice(0, 300)],
+            images: images.slice(0, 3).map(src => ({ src: '/' + src, alt: '' }))
+          };
+        case 'image-full':
+          return {
+            ...base,
+            bgImage: images[0] ? '/' + images[0] : '',
+            title: summary.slice(0, 30),
+            body: text ? [text.slice(0, 100)] : [],
+            metadata: { panelPosition: 'bottom' }
+          };
+        case 'image-grid':
+          return {
+            ...base,
+            title: summary.slice(0, 30),
+            body: text ? [text.slice(0, 100)] : [],
+            images: images.map(src => ({ src: '/' + src, alt: '' }))
+          };
+        case 'image-draw':
+          return {
+            ...base,
+            bgImage: images[0] ? '/' + images[0] : '',
+            title: summary.slice(0, 30),
+            body: text ? [text.slice(0, 200)] : []
+          };
+        case 'dark-text-image':
+          return {
+            ...base,
+            title: summary.slice(0, 30),
+            body: text ? [text.slice(0, 200)] : [],
+            images: images.slice(0, 4).map(src => ({ src: '/' + src, alt: '' }))
+          };
+        case 'about':
+          return {
+            ...base,
+            body: paragraphs.length > 0 ? paragraphs.slice(0, 3) : [text.slice(0, 300)],
+            images: images.slice(0, 32).map(src => ({ src: '/' + src, alt: '' })),
+            metadata: {
+              gridCols: 4,
+              gridRows: Math.min(8, Math.max(2, Math.ceil(images.length / 4)))
+            }
+          };
+        default:
+          return base;
+      }
+    }
+
+    // Change template for current page
+    function changeTemplate(template) {
+      pages[selectedIdx].user_template = template;
+      renderThumbs();
+      selectPage(selectedIdx);
+      saveToLocal();
+    }
+
+    // Toggle batch mode
+    function toggleBatch() {
+      batchMode = !batchMode;
+      selectedPages.clear();
+      document.getElementById('batch-bar').classList.toggle('visible', batchMode);
+      renderThumbs();
+    }
+
+    function toggleSelect(idx) {
+      if (selectedPages.has(idx)) selectedPages.delete(idx);
+      else selectedPages.add(idx);
+      document.getElementById('batch-count').textContent = `已选 ${selectedPages.size} 页`;
+    }
+
+    function cancelBatch() {
+      toggleBatch();
+    }
+
+    function applyBatch() {
+      const t = document.getElementById('batch-template').value;
+      if (!t) return;
+      selectedPages.forEach(idx => { pages[idx].user_template = t; });
+      renderThumbs();
+      selectPage(selectedIdx);
+      saveToLocal();
+      toggleBatch();
+    }
+
+    // Apply all AI recommendations
+    function applyAllAI() {
+      pages.forEach(p => { p.user_template = p.ai_template; });
+      renderThumbs();
+      selectPage(selectedIdx);
+      saveToLocal();
+    }
+
+    // Save to localStorage
+    function saveToLocal() {
+      localStorage.setItem('pdf_slides_preview', JSON.stringify(pages));
+    }
+
+    // Load from localStorage
+    function loadFromLocal() {
+      const saved = localStorage.getItem('pdf_slides_preview');
+      if (saved) {
+        try {
+          const data = JSON.parse(saved);
+          if (data.length === pages.length) {
+            data.forEach((d, i) => { pages[i].user_template = d.user_template; });
+          }
+        } catch(e) {}
+      }
+    }
+
+    // Confirm and generate
+    // Exports modified config as a downloadable JSON file
+    function confirmGenerate() {
+      // Build full config object
+      const fullConfig = {
+        meta: window.PAGES_CONFIG?.meta || { projectName: '', themeColor: '' },
+        pages: pages,
+        confirmed: true
+      };
+
+      // Download as JSON file
+      const blob = new Blob([JSON.stringify(fullConfig, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'pages_confirmed.json';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      alert('配置已导出为 pages_confirmed.json。\n\n请将此文件上传给 AI Agent 以生成最终HTML。');
+    }
+
+    // Init
+    loadFromLocal();
+    renderThumbs();
+    if (pages.length > 0) selectPage(0);
+  </script>
+</body>
+</html>
