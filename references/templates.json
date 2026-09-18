@@ -1,0 +1,112 @@
+{
+  "_meta": {
+    "description": "8模板自适应规则。AI匹配和后端渲染共用此文件。",
+    "version": "2.0"
+  },
+  "templates": {
+    "cover": {
+      "description": "封面页。全屏背景图+居中标题。",
+      "match_rules": ["第1页"],
+      "confidence": 95,
+      "adaptive": {
+        "has_bgImage + has_title": { "layout": "fullscreen-hero" },
+        "has_bgImage + no_title": { "layout": "fullscreen-image-only" },
+        "no_bgImage + has_title": { "layout": "solid-bg-title" }
+      },
+      "required_fields": ["bgImage"],
+      "optional_fields": ["title", "titleEn", "subtitle", "metadata.showLogo", "metadata.logo"]
+    },
+    "text-center": {
+      "description": "纯文字居中。引言/哲学/过渡/结尾。",
+      "match_rules": ["0张图 + 有文字", "纯文字段落", "引言/致谢/结语"],
+      "confidence": 90,
+      "adaptive": {
+        "text_length < 50": { "fontSize": "large", "lineHeight": 1.8, "spacing": "loose" },
+        "text_length 50-200": { "fontSize": "medium", "lineHeight": 1.7, "spacing": "normal" },
+        "text_length > 200": { "fontSize": "small", "lineHeight": 1.6, "spacing": "compact", "align": "left" },
+        "is_quote": { "fontStyle": "italic", "fontFamily": "display" },
+        "has_1_image": { "layout": "text-with-inline-image" }
+      },
+      "required_fields": ["title"],
+      "optional_fields": ["body", "subtitle", "label", "metadata.showLogo", "metadata.logo"]
+    },
+    "split": {
+      "description": "图文分栏。文字+图片+可选色卡/标签。",
+      "match_rules": ["1-3张图 + 多文字", "有颜色/材料参考", "空间叙事/材料策略"],
+      "confidence": 85,
+      "adaptive": {
+        "text_length > 200": { "textRatio": 0.55, "imageRatio": 0.45 },
+        "text_length 50-200": { "textRatio": 0.45, "imageRatio": 0.55 },
+        "text_length < 50": { "textRatio": 0.35, "imageRatio": 0.65 },
+        "image_count 1": { "layout": "single-image" },
+        "image_count 2-3": { "layout": "image-stack" },
+        "has_swatches": { "showSwatches": true, "swatchPosition": "below-text" },
+        "has_tags": { "showTags": true, "tagPosition": "below-text" },
+        "metadata.noCrop": { "imageFit": "contain", "overflow": "visible" },
+        "metadata.reverse": { "layout": "image-left" }
+      },
+      "required_fields": ["title"],
+      "optional_fields": ["body", "images", "swatches", "tags", "metadata"]
+    },
+    "image-full": {
+      "description": "全屏图片+渐变文字面板。",
+      "match_rules": ["1张大图 + 少量文字", "效果图/渲染图", "氛围图"],
+      "confidence": 85,
+      "adaptive": {
+        "has_text + text_at_bottom": { "panelPosition": "bottom", "gradient": "from-bottom" },
+        "has_text + text_centered": { "panelPosition": "center", "overlay": "semi-transparent" },
+        "no_text": { "panelPosition": "none", "layout": "image-only" }
+      },
+      "required_fields": ["bgImage"],
+      "optional_fields": ["title", "body", "bgOverlay", "metadata.panelPosition"]
+    },
+    "image-grid": {
+      "description": "多图网格+文字。",
+      "match_rules": ["多张图 + 文字", "案例/参考图集", "多角度照片"],
+      "confidence": 80,
+      "adaptive": {
+        "image_count 1-2": { "columns": 1, "layout": "stack", "fallback_template": "split" },
+        "image_count 3-4": { "columns": 2, "layout": "grid" },
+        "image_count 5-8": { "columns": 2, "layout": "scroll-dual-column" },
+        "image_count 9+": { "columns": 3, "layout": "scroll-masonry" }
+      },
+      "required_fields": ["images"],
+      "optional_fields": ["title", "body", "tags", "metadata.leftColumn", "metadata.rightColumn"]
+    },
+    "image-draw": {
+      "description": "全屏图+毛玻璃面板。分析图/平面图/剖面图。",
+      "match_rules": ["分析图/平面图/剖面图", "有标注线的图 + 说明文字"],
+      "confidence": 90,
+      "adaptive": {
+        "has_planImage": { "panelType": "plan-overlay", "showPlanInPanel": true },
+        "no_planImage": { "panelType": "text-only", "showPlanInPanel": false }
+      },
+      "required_fields": ["bgImage"],
+      "optional_fields": ["title", "body", "metadata.planImage"]
+    },
+    "dark-text-image": {
+      "description": "深色背景+左文右图。艺术家/展览/人物。",
+      "match_rules": ["深色背景或暗调图片", "艺术家/展览/人物介绍", "深色主题内容"],
+      "confidence": 85,
+      "adaptive": {
+        "image_count 1": { "layout": "single-large" },
+        "image_count 2-4": { "layout": "grid-2x2" },
+        "has_artist_name": { "highlightSubtitle": true }
+      },
+      "required_fields": ["title", "images"],
+      "optional_fields": ["body", "subtitle", "bodySecondary", "metadata.artistRole"]
+    },
+    "about": {
+      "description": "左文+右图网格。公司介绍/作品集。",
+      "match_rules": ["公司介绍/团队", "多个案例缩略图", "成立年份/团队信息"],
+      "confidence": 88,
+      "adaptive": {
+        "image_count <= 8": { "gridCols": 3, "gridRows": "auto" },
+        "image_count 9-20": { "gridCols": 4, "gridRows": "auto" },
+        "image_count > 20": { "gridCols": 4, "gridRows": 8, "scroll": true }
+      },
+      "required_fields": ["body", "images"],
+      "optional_fields": ["bodyEn", "metadata.gridCols", "metadata.gridRows"]
+    }
+  }
+}
