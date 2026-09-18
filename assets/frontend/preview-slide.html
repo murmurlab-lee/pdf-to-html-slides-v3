@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Preview</title>
+  <link rel="stylesheet" href="./index.css">
+  <style>
+    html, body, #root { width: 100%; height: 100%; margin: 0; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script>
+    // Read slide data from URL hash (synchronous, ensures data is ready before index.js loads)
+    // Parent passes: encodeURIComponent(JSON.stringify([slideData]))
+    try {
+      var hash = window.location.hash.slice(1);
+      if (hash) {
+        var decoded = decodeURIComponent(hash);
+        window.SLIDES_DATA = JSON.parse(decoded);
+      }
+    } catch(e) {
+      console.error('Failed to parse slide data from hash:', e);
+      window.SLIDES_DATA = [];
+    }
+  </script>
+  <script src="./index.js"></script>
+</body>
+</html>
